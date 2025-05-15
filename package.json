@@ -39,6 +39,7 @@
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
+    "framer-motion": "^12.11.4",
     "gsap": "^3.12.7",
     "intersection-observer": "^0.12.2",
     "jsonwebtoken": "^9.0.2",
