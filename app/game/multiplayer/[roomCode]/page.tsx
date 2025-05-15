@@ -1,8 +1,70 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { initializeSocket, getSocket, GameResult, GameChoice } from '../../../lib/socket';
+
+const ChatBox = ({ roomId }: { roomId: string }) => {
+  const [messages, setMessages] = useState<{ sender: string; text: string; }[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const socket = getSocket();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const messageListener = (message: { sender: string; text: string; }) => {
+      setMessages(prevMessages => [...prevMessages, message]);
+    };
+
+    socket.on('chat-message', messageListener);
+
+    return () => {
+      socket.off('chat-message', messageListener);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages]);
+
+  const sendMessage = () => {
+    if (!socket) return;
+    if (newMessage.trim()) {
+      socket.emit('send-message', { roomId: roomId, text: newMessage });
+      setNewMessage('');
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-md p-4">
+      <h2 className="text-xl font-bold mb-4">Chat</h2>
+      <div className="space-y-2 h-48 overflow-y-auto mb-4">
+        {messages.map((msg, index) => (
+          <div key={index} className="text-sm">
+            <span className="font-semibold">{msg.sender}:</span> {msg.text}
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className="flex">
+        <input
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Type your message..."
+          className="w-full p-2 border rounded-l-lg"
+        />
+        <button
+          onClick={sendMessage}
+          className="bg-blue-600 text-white font-semibold rounded-r-lg px-4 hover:bg-blue-700 transition-colors"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export default function MultiplayerGameRoom() {
   const params = useParams();
@@ -16,6 +78,7 @@ export default function MultiplayerGameRoom() {
   const [gameStarted, setGameStarted] = useState(false);
   const [result, setResult] = useState<string>('');
   const [socketConnected, setSocketConnected] = useState(false);
+  const socket = getSocket();
 
   useEffect(() => {
     const socket = initializeSocket();
@@ -159,6 +222,21 @@ export default function MultiplayerGameRoom() {
             </div>
           </div>
         )}
+      </div>
+        <div className="space-y-4">
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h2 className="text-xl font-bold mb-4">Players</h2>
+            <div className="space-y-2">
+              {players.map((playerId) => (
+                <div key={playerId} className="flex items-center justify-between">
+                  <span className="font-medium">{playerId === socket?.id ? 'You' : 'Opponent'}</span>
+                  <span className="inline-block w-3 h-3 bg-green-500 rounded-full"></span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <ChatBox roomId={roomCode} />
+        </div>
       </div>
     </div>
   );

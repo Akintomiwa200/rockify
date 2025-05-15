@@ -47,6 +47,10 @@ const ioHandler = (req: NextApiRequest, res: NextApiResponse) => {
         });
       });
 
+      socket.on('send-message', (data: { message: any, roomId: string }) => {
+        socket.to(data.roomId).emit('chat-message', data.message);
+      });
+
       socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
         // Remove player from rooms if necessary
